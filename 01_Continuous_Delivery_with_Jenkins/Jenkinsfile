@@ -1,0 +1,49 @@
+def COLOR_MAP = [
+    'SUCCESS': 'good',
+    'FAILURE': 'danger',
+]
+pipeline{
+    agent any
+    tools{
+        maven 'MAVEN'
+    }
+    environment{
+        DOCKER_USER = 'gautamjha3112002'
+
+    }
+    stages{
+        stage('Fetch code'){
+            steps{
+                git branch: 'master', url: 'https://github.com/gautamjha2002/DevOps-Projects.git'
+            }
+        }
+        stage('Build'){
+            steps{
+                sh 'mvn install -DpomFile=01_Continuous_Delivery_with_Jenkins/Application/pom.xml'
+            }
+        }
+        stage('Test'){
+            steps{
+                sh 'mvn test -DpomFile=01_Continuous_Delivery_with_Jenkins/Application/pom.xml'
+            }
+        }
+        stage ('CODE ANALYSIS WITH CHECKSTYLE'){
+            steps{
+                sh 'mvn checkstyle:checkstyle -DpomFile=01_Continuous_Delivery_with_Jenkins/Application/pom.xml'
+            }
+            post{
+                success{
+                    echo 'Analysis Result Generated'
+                }
+            }
+        }
+
+        
+        stage('Deploying The application'){
+            steps{
+                sh 'cd 01_Continuous_Delivery_with_Jenkins/Application/docker-compose.yml'
+                sh 'docker compose up -d'
+            }
+        }
+    }
+}
