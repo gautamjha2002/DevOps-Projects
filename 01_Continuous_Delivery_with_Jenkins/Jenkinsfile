@@ -41,7 +41,7 @@ pipeline{
         
         stage('Deploying The application'){
             steps{
-                sh 'docker-compose -f 01_Continuous_Delivery_with_Jenkins/Application/docker-compose.yml -d'
+                sh 'docker compose -f 01_Continuous_Delivery_with_Jenkins/Application/docker-compose.yml -d'
             }
         }
     }
