@@ -19,17 +19,17 @@ pipeline{
         }
         stage('Build'){
             steps{
-                sh 'mvn install -DpomFile=01_Continuous_Delivery_with_Jenkins/Application/pom.xml'
+                sh 'mvn -f 01_Continuous_Delivery_with_Jenkins/Application/pom.xml install'
             }
         }
         stage('Test'){
             steps{
-                sh 'mvn test -DpomFile=01_Continuous_Delivery_with_Jenkins/Application/pom.xml'
+                sh 'mvn -f 01_Continuous_Delivery_with_Jenkins/Application/pom.xml test'
             }
         }
         stage ('CODE ANALYSIS WITH CHECKSTYLE'){
             steps{
-                sh 'mvn checkstyle:checkstyle -DpomFile=01_Continuous_Delivery_with_Jenkins/Application/pom.xml'
+                sh 'mvn -f 01_Continuous_Delivery_with_Jenkins/Application/pom.xml checkstyle:checkstyle'
             }
             post{
                 success{
