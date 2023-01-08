@@ -1,9 +1,0 @@
-version: '3.9'
-services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: gautamjha3112002/spring-petclinic:0.1
-    ports:
-      - "80:8080"
