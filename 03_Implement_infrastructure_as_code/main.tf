@@ -11,6 +11,27 @@ resource "aws_instance" "web_server" {
   tags = {
     Name = "Web-Server"
   }
+
+  user_data = <<EOF
+#!/bin/bash
+sudo apt-get update -y
+sudo apt install nginx-core -y
+cat >/var/www/html/index* <<EOF2
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevOps 3rd Project</title>
+</head>
+<body>
+<h1>Here is the Image we uploaded on S3 and get it using cloudfront</h1>
+<img src="https://${aws_cloudfront_distribution.s3-distribution.domain_name}/${aws_s3_object.img-object.key}" alt="Something is wrong" srcset="">
+</body>
+</html>
+EOF2
+EOF
 }
 
 resource "aws_security_group" "web-server-sg" {
@@ -135,6 +156,7 @@ resource "aws_lb" "web-server-alb" {
   subnets = [ aws_default_subnet.default_az1.id, aws_default_subnet.default_az2.id, aws_default_subnet.default_az3.id, aws_default_subnet.default_az4.id, aws_default_subnet.default_az5.id, aws_default_subnet.default_az6.id ]
 }
 
+
 resource "aws_lb_listener" "alb-listener" {
   load_balancer_arn = aws_lb.web-server-alb.arn
   port = 80
@@ -146,3 +168,89 @@ resource "aws_lb_listener" "alb-listener" {
   }
 }
 
+
+## Create S3
+resource "aws_s3_bucket" "s3-bucket" {
+  bucket = "day4-devops-s3"
+  tags = {
+    Name = "DevOps Project s3"
+  }
+  
+}
+
+resource "aws_s3_bucket_acl" "s3-acl" {
+  bucket = aws_s3_bucket.s3-bucket.id
+  acl = "private"
+}
+
+# resource "aws_s3_bucket_object" "img-object" {
+#   bucket = aws_s3_bucket.s3-bucket.bucket
+#   key = "FB_BG.png"
+# }
+
+resource "aws_s3_object" "img-object" {
+  bucket = aws_s3_bucket.s3-bucket.bucket
+  key = "FB_BG.png"
+  source = "FB_BG.png"
+  acl = "public-read"
+}
+
+## Create cloudfront
+
+locals {
+  s3_origin_id = "tfS3Origin"
+}
+
+resource "aws_cloudfront_distribution" "s3-distribution" {
+
+  origin {
+    domain_name = aws_s3_bucket.s3-bucket.bucket_regional_domain_name
+    origin_id = local.s3_origin_id
+
+  }
+
+  enabled = true
+  is_ipv6_enabled = true
+
+  default_cache_behavior {
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = local.s3_origin_id
+
+    forwarded_values {
+      query_string = false
+
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "allow-all"
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
+
+  }
+
+    price_class = "PriceClass_All"
+
+    restrictions {
+    geo_restriction {
+      restriction_type = "none"
+
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+  
+}
+
+output "dns-name" {
+  value = aws_cloudfront_distribution.s3-distribution.domain_name
+}
+
+output "lb-dns-name" {
+  value = aws_lb.web-server-alb.dns_name
+}
